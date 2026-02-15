@@ -38,8 +38,7 @@ export default function AnalyticsPage() {
       setWeatherForecast(forecast)
       setRecommendations(recs)
     } catch (err) {
-      // Error handling - in production this would go to error tracking
-      // For now, we'll show a user-friendly message
+      console.error('Analytics load error:', err)
       setHistoricalData(null)
       setWeatherForecast(null)
       setRecommendations(null)

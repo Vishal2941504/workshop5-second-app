@@ -29,8 +29,9 @@ export default function DashboardPage() {
       setHistoricalData(historical)
       setError(null)
     } catch (err) {
-      setError(err.message || 'Failed to load dashboard data')
-      // Error is handled by error handler utility in production
+      const errorMsg = err.message || err.toString() || 'Failed to load dashboard data'
+      console.error('Dashboard load error:', err)
+      setError(errorMsg)
     } finally {
       setLoading(false)
     }

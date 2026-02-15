@@ -40,7 +40,12 @@ api.interceptors.response.use(
     } else if (error.request) {
       // Request made but no response
       handleError(error, 'API:NoResponse')
-      return Promise.reject(new Error('Network error: Unable to reach server'))
+      console.error('Network error details:', {
+        message: error.message,
+        code: error.code,
+        config: { url: error.config?.url, baseURL: error.config?.baseURL }
+      })
+      return Promise.reject(new Error(`Network error: Unable to reach server at ${error.config?.baseURL || 'unknown URL'}. Make sure the backend server is running on port 8000`))
     } else {
       // Something else happened
       handleError(error, 'API:Unknown')
