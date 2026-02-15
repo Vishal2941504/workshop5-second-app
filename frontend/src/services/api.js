@@ -1,7 +1,12 @@
 import axios from 'axios'
 import { handleError } from '../utils/errorHandler'
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1'
+// For Amplify, use environment variable or default to a backend URL
+// Update this with your actual backend API URL when deployed
+const API_BASE_URL = import.meta.env.VITE_API_URL || 
+  (import.meta.env.MODE === 'production' 
+    ? 'https://your-backend-api-url.com/api/v1'  // Update with your backend URL
+    : 'http://localhost:8000/api/v1')
 
 const api = axios.create({
   baseURL: API_BASE_URL,
