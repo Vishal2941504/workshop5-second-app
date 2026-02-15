@@ -1,105 +1,14 @@
 import axios from 'axios'
-import { handleError } from '../utils/errorHandler'
 
-// Simple API URL configuration
-// For local: uses localhost:8000
-// For production: set VITE_API_URL environment variable
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1'
+// Simple API configuration
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1'
 
 const api = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  timeout: 10000, // 10 second timeout
+  baseURL: API_URL,
+  timeout: 5000
 })
 
-// Request interceptor
-api.interceptors.request.use(
-  (config) => {
-    return config
-  },
-  (error) => {
-    handleError(error, 'API:Request')
-    return Promise.reject(error)
-  }
-)
-
-// Response interceptor for error handling
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response) {
-      // Server responded with error status
-      const { status, data } = error.response
-      handleError(error, `API:Response:${status}`)
-      
-      // Return user-friendly error message
-      const errorMessage = data?.message || data?.detail || `Server error: ${status}`
-      return Promise.reject(new Error(errorMessage))
-    } else if (error.request) {
-      // Request made but no response
-      handleError(error, 'API:NoResponse')
-      console.error('Network error details:', {
-        message: error.message,
-        code: error.code,
-        config: { url: error.config?.url, baseURL: error.config?.baseURL }
-      })
-      return Promise.reject(new Error(`Network error: Unable to reach server at ${error.config?.baseURL || 'unknown URL'}. Make sure the backend server is running on port 8000`))
-    } else {
-      // Something else happened
-      handleError(error, 'API:Unknown')
-      return Promise.reject(new Error('An unexpected error occurred'))
-    }
-  }
-)
-
-export const fetchDashboard = async () => {
-  try {
-    const response = await api.get('/dashboard')
-    return response.data
-  } catch (error) {
-    throw error
-  }
-}
-
-export const fetchRecommendations = async () => {
-  try {
-    const response = await api.get('/recommendations')
-    return response.data
-  } catch (error) {
-    throw error
-  }
-}
-
-export const fetchHistoricalData = async (days = 30) => {
-  try {
-    // Validate days parameter
-    const validDays = Math.max(1, Math.min(365, parseInt(days) || 30))
-    const response = await api.get('/historical', { params: { days: validDays } })
-    return response.data
-  } catch (error) {
-    throw error
-  }
-}
-
-export const fetchSensorData = async (days = 7) => {
-  try {
-    // Validate days parameter
-    const validDays = Math.max(1, Math.min(365, parseInt(days) || 7))
-    const response = await api.get('/sensor-data', { params: { days: validDays } })
-    return response.data
-  } catch (error) {
-    throw error
-  }
-}
-
-export const fetchWeatherForecast = async () => {
-  try {
-    const response = await api.get('/weather-forecast')
-    return response.data
-  } catch (error) {
-    throw error
-  }
-}
-
+export const fetchDashboard = () => api.get('/dashboard').then(r => r.data)
+export const fetchRecommendations = () => api.get('/recommendations').then(r => r.data)
+export const fetchHistoricalData = (days = 30) => api.get('/historical', { params: { days } }).then(r => r.data)
+export const fetchWeatherForecast = () => api.get('/weather-forecast').then(r => r.data)

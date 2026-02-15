@@ -1,47 +1,12 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from contextlib import asynccontextmanager
 import uvicorn
-from datetime import datetime, timedelta
-import sys
 import os
-from dotenv import load_dotenv
 
-# Load environment variables
-load_dotenv()
+app = FastAPI(title="Agriculture API")
 
-# Add the backend directory to the path
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-
-from database import init_db, get_db
-from models import SensorData
-from services.ai_service import AIService
-from services.data_service import DataService
-from api.routes import router
-from middleware import RateLimitMiddleware, SecurityHeadersMiddleware
-
-# Startup event
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # Initialize database and seed data
-    init_db()
-    DataService.seed_mock_data()
-    yield
-    # Cleanup if needed
-
-app = FastAPI(
-    title="Precision Agriculture Decision Platform API",
-    description="AI-powered agricultural recommendations",
-    version="1.0.0",
-    lifespan=lifespan
-)
-
-# Security middleware (must be added first)
-app.add_middleware(SecurityHeadersMiddleware)
-app.add_middleware(RateLimitMiddleware)
-
-# CORS middleware - Simple configuration
+# Simple CORS - allow everything
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -50,53 +15,81 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Global exception handler
-@app.exception_handler(HTTPException)
-async def http_exception_handler(request, exc: HTTPException):
-    """Handle HTTP exceptions with standardized format"""
-    return JSONResponse(
-        status_code=exc.status_code,
-        content={
-            "error": True,
-            "message": exc.detail,
-            "status_code": exc.status_code,
-            "timestamp": datetime.now().isoformat()
-        }
-    )
+# Simple dashboard endpoint
+@app.get("/api/v1/dashboard")
+async def get_dashboard():
+    return {
+        "current_soil_moisture": 45.5,
+        "current_nutrients": {
+            "nitrogen": 25.0,
+            "phosphorus": 18.0,
+            "potassium": 200.0
+        },
+        "current_weather": {
+            "temperature": 22.0,
+            "humidity": 60.0,
+            "rainfall": 5.0
+        },
+        "yield_forecast": 8.5,
+        "recommendations": {
+            "irrigation": "Medium",
+            "fertilizer": "Apply",
+            "pest_risk": "Low",
+            "confidence": 0.85,
+            "alerts": []
+        },
+        "last_updated": "2026-02-15T14:00:00"
+    }
 
-@app.exception_handler(Exception)
-async def global_exception_handler(request, exc):
-    """Handle all other exceptions - don't expose internal details in production"""
-    import traceback
+@app.get("/api/v1/recommendations")
+async def get_recommendations():
+    return {
+        "irrigation": "Medium",
+        "fertilizer": "Apply",
+        "pest_risk": "Low",
+        "confidence": 0.85
+    }
+
+@app.get("/api/v1/historical")
+async def get_historical():
+    # Simple mock data
+    sensor_data = []
+    for i in range(30):
+        sensor_data.append({
+            "timestamp": f"2026-02-{15-i:02d}T10:00:00",
+            "soil_moisture": 40 + i * 0.5,
+            "temperature": 20 + i * 0.3,
+            "humidity": 55 + i * 0.2,
+            "soil_nitrogen": 20 + i * 0.1,
+            "soil_phosphorus": 15 + i * 0.1,
+            "soil_potassium": 180 + i * 0.5,
+            "rainfall": i % 7 * 2
+        })
     
-    # Log full error in development
-    if os.getenv("ENVIRONMENT") != "production":
-        print(f"Unhandled exception: {exc}")
-        traceback.print_exc()
-    
-    return JSONResponse(
-        status_code=500,
-        content={
-            "error": True,
-            "message": "An internal server error occurred" if os.getenv("ENVIRONMENT") == "production" else str(exc),
-            "status_code": 500,
-            "timestamp": datetime.now().isoformat()
-        }
-    )
+    return {
+        "sensor_data": sensor_data,
+        "yield_history": [
+            {"season": "2024 Spring", "crop_type": "Wheat", "yield_amount": 7.5, "harvest_date": "2024-06-15"},
+            {"season": "2024 Fall", "crop_type": "Corn", "yield_amount": 9.2, "harvest_date": "2024-11-20"}
+        ]
+    }
 
-# Include routers
-app.include_router(router, prefix="/api/v1")
-
-@app.get("/")
-async def root():
-    return {"message": "Precision Agriculture Decision Platform API", "status": "running"}
+@app.get("/api/v1/weather-forecast")
+async def get_weather():
+    forecast = []
+    for i in range(7):
+        forecast.append({
+            "date": f"2026-02-{16+i:02d}",
+            "temperature": 20 + i,
+            "humidity": 60 - i * 2,
+            "rainfall": i % 3 * 5
+        })
+    return {"forecast": forecast}
 
 @app.get("/health")
-async def health_check():
-    return {"status": "healthy", "timestamp": datetime.now().isoformat()}
+async def health():
+    return {"status": "ok"}
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8000))
-    host = os.getenv("HOST", "0.0.0.0")
-    uvicorn.run(app, host=host, port=port)
-
+    uvicorn.run(app, host="0.0.0.0", port=port)

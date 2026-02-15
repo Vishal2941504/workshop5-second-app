@@ -1,67 +1,46 @@
 #!/bin/bash
-# Simple startup script - runs both backend and frontend
 
-echo "🚀 Starting Precision Agriculture Platform..."
-echo ""
+echo "🚀 Starting Simple Agriculture Platform..."
 
-# Kill any existing processes
+# Kill existing processes
 pkill -f "python3.*main.py" 2>/dev/null
 pkill -f "node.*server.js" 2>/dev/null
 sleep 2
 
 # Start Backend
-echo "📡 Starting Backend Server..."
+echo "📡 Starting Backend..."
 cd backend
 python3 main.py > ../backend.log 2>&1 &
-BACKEND_PID=$!
-echo $BACKEND_PID > ../backend.pid
+echo $! > ../backend.pid
 cd ..
-
-# Wait for backend to start
-echo "⏳ Waiting for backend to start..."
-sleep 5
-
-# Check if backend is running
-if curl -s http://localhost:8000/health > /dev/null 2>&1; then
-    echo "✅ Backend is running on http://localhost:8000"
-else
-    echo "❌ Backend failed to start. Check backend.log"
-    exit 1
-fi
-
-# Start Frontend
-echo "🌐 Starting Frontend Server..."
-cd frontend
-
-# Build if needed
-if [ ! -d "dist" ] || [ "src" -nt "dist" ]; then
-    echo "📦 Building frontend..."
-    npm run build > /dev/null 2>&1
-fi
-
-# Start server
-node server.js > ../frontend.log 2>&1 &
-FRONTEND_PID=$!
-echo $FRONTEND_PID > ../frontend.pid
-cd ..
-
-# Wait for frontend to start
 sleep 3
 
-# Check if frontend is running
-if curl -s http://localhost:3000 > /dev/null 2>&1; then
-    echo "✅ Frontend is running on http://localhost:3000"
-else
-    echo "❌ Frontend failed to start. Check frontend.log"
+# Check backend
+if ! curl -s http://localhost:8000/health > /dev/null; then
+    echo "❌ Backend failed to start"
     exit 1
 fi
+echo "✅ Backend running on http://localhost:8000"
+
+# Build and start Frontend
+echo "🌐 Building Frontend..."
+cd frontend
+npm run build > /dev/null 2>&1
+
+echo "🚀 Starting Frontend..."
+node server.js > ../frontend.log 2>&1 &
+echo $! > ../frontend.pid
+cd ..
+sleep 2
+
+# Check frontend
+if ! curl -s http://localhost:3000 > /dev/null; then
+    echo "❌ Frontend failed to start"
+    exit 1
+fi
+echo "✅ Frontend running on http://localhost:3000"
 
 echo ""
-echo "🎉 Application is ready!"
+echo "🎉 Application ready!"
+echo "📍 Open: http://localhost:3000"
 echo ""
-echo "📍 Frontend: http://localhost:3000"
-echo "📍 Backend API: http://localhost:8000"
-echo "📍 API Docs: http://localhost:8000/docs"
-echo ""
-echo "To stop: ./stop.sh or kill the processes"
-
