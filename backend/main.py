@@ -41,18 +41,13 @@ app = FastAPI(
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(RateLimitMiddleware)
 
-# CORS middleware
-# Get allowed origins from environment variable
-allowed_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:5173").split(",")
-allowed_origins = [origin.strip() for origin in allowed_origins]
-
+# CORS middleware - Simple configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins for development
+    allow_origins=["*"],
     allow_credentials=True,
-    allow_methods=["*"],  # Allow all methods
-    allow_headers=["*"],  # Allow all headers
-    expose_headers=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Global exception handler
